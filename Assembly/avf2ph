@@ -1,0 +1,117 @@
+.data 
+nomeArquivo: .asciiz "C:\\Users\\pedro\\Downloads\\Assembly\\listaph.txt"      
+buffer: .space 4096                 
+memoryData: .align 2               
+tamanho: .word 100                     
+
+.text
+main:
+    li $v0, 13                      
+    la $a0, nomeArquivo                
+    li $a1, 0                       
+    li $a2, 0                       
+    syscall
+    move $s0, $v0                   
+
+    li $v0, 14                      
+    move $a0, $s0                   
+    la $a1, buffer                  
+    li $a2, 4096                    
+    syscall
+    move $t0, $v0                   
+
+    li $v0, 16                      
+    move $a0, $s0
+    syscall
+
+    la $a0, buffer                  
+    la $t4, memoryData             
+convert_loop:
+    lb $t5, 0($a0)                   
+    beqz $t5, convert_end            
+    jal str_to_int                   
+    addi $a0, $a0, 1                 
+    j convert_loop                   
+
+convert_end:
+
+    jal bubble_sort
+
+    jal print_sorted_list
+
+    li $v0, 10                      
+    syscall
+
+str_to_int:
+    li $t1, 0                        
+    li $t2, 10                       
+    li $t6, 0                        
+
+    lb $t3, 0($a0)                   
+    li $t7, 45                       
+    bne $t3, $t7, str_loop           
+    li $t6, 1                        
+    addi $a0, $a0, 1                 
+
+str_loop:
+    lb $t3, 0($a0)                   
+    beq $t3, 0x2C, str_done          
+    beqz $t3, str_done               
+
+    sub $t3, $t3, 48                 
+    mul $t1, $t1, $t2                
+    add $t1, $t1, $t3                
+    addi $a0, $a0, 1                 
+    j str_loop
+
+str_done:   
+    beqz $t6, skip_neg               
+    sub $t1, $zero, $t1              
+
+skip_neg:
+    sw $t1, 0($t4)                   
+    addi $t4, $t4, 4                 
+    jr $ra                           
+
+bubble_sort:
+    li $t0, 0                        
+
+outer_loop:
+    li $t1, 0                        
+inner_loop:
+    lw $t2, memoryData($t1)         
+    lw $t3, memoryData+4($t1)       
+    ble $t2, $t3, no_swap            
+
+    # Troca os elementos
+    sw $t3, memoryData($t1)
+    sw $t2, memoryData+4($t1)
+
+no_swap:
+    addi $t1, $t1, 4                 
+    blt $t1, 396, inner_loop         
+
+    addi $t0, $t0, 1                 
+    blt $t0, 99, outer_loop          
+
+    jr $ra                           
+
+print_sorted_list:
+    li $t0, 0                      
+print_loop:
+    lw $a0, memoryData($t0)         
+    li $v0, 1                       
+    syscall
+
+    addi $t0, $t0, 4                 
+    blt $t0, 396, print_comma        
+    j end_print                     
+
+print_comma:
+    li $a0, 44                       
+    li $v0, 11                      
+    syscall
+    j print_loop
+
+end_print:
+    jr $ra  
